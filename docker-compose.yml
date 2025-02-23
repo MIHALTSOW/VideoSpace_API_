@@ -1,0 +1,88 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: db
+    restart: always
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=alex
+      - POSTGRES_PASSWORD=123
+      - POSTGRES_DB=videospace
+    ports:
+      - "5433:5432"
+    networks:
+      - djangonetwork
+
+
+  webdjango:
+    build: .
+    container_name: django
+    command: sh -c "python manage.py collectstatic --no-input &&
+      python manage.py makemigrations &&
+      python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/code
+      - app-media:/code/media/photos
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5433
+      - DATABASE_NAME=videospace
+      - DATABASE_USER=alex
+      - DATABASE_PASSWORD=123
+    networks:
+      - djangonetwork
+
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    expose:
+      - 6379
+    volumes:
+      - ./docker/redis/data:/data
+
+
+  nginx:
+    build:
+      dockerfile: ./Dockerfile
+      context: ./docker/nginx
+    container_name: nginx
+    image: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - static:/code/static
+      - app-media:/code/photos
+    depends_on:
+      - webdjango
+      - frontend
+    networks:
+      - djangonetwork
+
+
+  frontend:
+    build:
+      context: git@github.com:MIHALTSOW/VideoSpace_Frontend_.git
+      ssh:
+        - default
+    networks:
+      - djangonetwork
+    ports:
+      - "3000:3000"
+
+
+networks:
+  djangonetwork:
+    driver: bridge
+
+volumes:
+  pgdata:
+  static:
+  app-media:
