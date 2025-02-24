@@ -7,7 +7,7 @@ services:
       - pgdata:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=alex
-      - POSTGRES_PASSWORD=123
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=videospace
     ports:
       - "5433:5432"
@@ -30,12 +30,14 @@ services:
     depends_on:
       - db
       - redis
+    env_file:
+      - .env
     environment:
-      - DATABASE_HOST=db
-      - DATABASE_PORT=5433
+      - DATABASE_HOST=${DB_HOST}
+      - DATABASE_PORT=${DB_PORT}
       - DATABASE_NAME=videospace
       - DATABASE_USER=alex
-      - DATABASE_PASSWORD=123
+      - DATABASE_PASSWORD=${DB_PASSWORD}
     networks:
       - djangonetwork
 
